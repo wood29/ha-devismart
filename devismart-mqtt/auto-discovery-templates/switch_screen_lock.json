@@ -1,0 +1,20 @@
+{
+  "topic": "homeassistant/switch/${deviceSN}_screen_lock/config",
+  "template": {
+    "state_topic": "devi/state/${deviceSN}/switch_screen_lock",
+    "command_topic":"devi/command/${deviceSN}/switch_screen_lock",
+    "device": {
+      "identifiers": [
+        "${deviceSN}"
+      ],
+      "manufacturer": "Danfoss",
+      "name": "DeviReg ${deviceSN}",
+      "model": "DeviReg Smart Thermostat"
+    },
+    "unique_id": "id_${deviceSN}_screen_lock",
+    "default_entity_id": "devireg_${deviceSN}_switch_screen_lock",
+    "name": "Switch Screen lock",
+    "icon":"mdi:lock",
+    "device_class": "switch"
+  }
+}

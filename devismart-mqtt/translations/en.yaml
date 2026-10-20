@@ -1,0 +1,20 @@
+configuration:
+  host:
+    name: MQTT broker host
+    description: Use core-mosquitto for the Mosquitto broker app.
+  port:
+    name: MQTT broker port
+  user:
+    name: MQTT username
+  password:
+    name: MQTT password
+  pairing_code:
+    name: Pairing code
+    description: >-
+      Only needed once. In the DEVIsmart app open Settings > Share house, generate a code,
+      paste it here, save and restart this app. Ignored once the thermostats are paired.
+  pairing_name:
+    name: Name in the DEVIsmart app
+    description: How this connection appears in the DEVIsmart app's list of shared users.
+  log_level:
+    name: Log level

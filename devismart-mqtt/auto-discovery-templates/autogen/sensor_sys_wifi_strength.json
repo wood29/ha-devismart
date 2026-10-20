@@ -1,0 +1,20 @@
+{
+    "topic": "homeassistant/sensor/${deviceSN}_sys_wifi_strength/config",
+    "template": {
+        "state_topic": "devi/state/${deviceSN}/sys_wifi_strength",
+        "device": {
+            "identifiers": [
+                "${deviceSN}"
+            ],
+            "manufacturer": "Danfoss",
+            "name": "DeviReg ${deviceSN}",
+            "model": "DeviReg Smart Thermostat"
+        },
+        "unique_id": "id_${deviceSN}_sys_wifi_strength",
+        "default_entity_id": "devireg_${deviceSN}_sys_wifi_strength",
+        "name": "Sys wifi strength",
+        "unit_of_measurement": "dBm",
+        "device_class": "signal_strength",
+        "state_class": "measurement"
+    }
+}

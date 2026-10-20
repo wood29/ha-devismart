@@ -1,0 +1,18 @@
+{
+  "topic": "homeassistant/sensor/${deviceSN}_sensor_control_state/config",
+  "template": {
+    "state_topic": "devi/state/${deviceSN}/sensor_control_state",
+    "device": {
+      "identifiers": [
+        "${deviceSN}"
+      ],
+      "manufacturer": "Danfoss",
+      "name": "DeviReg ${deviceSN}",
+      "model": "DeviReg Smart Thermostat"
+    },
+    "unique_id": "id_${deviceSN}_control_state",
+    "default_entity_id": "devireg_${deviceSN}_control_state",
+    "name": "# Control state",
+    "force_update": true
+  }
+}

@@ -1,0 +1,17 @@
+{
+    "topic": "homeassistant/sensor/${deviceSN}_sys_room_name/config",
+    "template": {
+        "state_topic": "devi/state/${deviceSN}/sys_room_name",
+        "device": {
+            "identifiers": [
+                "${deviceSN}"
+            ],
+            "manufacturer": "Danfoss",
+            "name": "DeviReg ${deviceSN}",
+            "model": "DeviReg Smart Thermostat"
+        },
+        "unique_id": "id_${deviceSN}_sys_room_name",
+        "default_entity_id": "devireg_${deviceSN}_sys_room_name",
+        "name": "Sys room name"
+    }
+}

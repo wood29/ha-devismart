@@ -1,0 +1,17 @@
+{
+    "topic": "homeassistant/sensor/${deviceSN}_sys_info_sensor_type/config",
+    "template": {
+        "state_topic": "devi/state/${deviceSN}/sys_info_sensor_type",
+        "device": {
+            "identifiers": [
+                "${deviceSN}"
+            ],
+            "manufacturer": "Danfoss",
+            "name": "DeviReg ${deviceSN}",
+            "model": "DeviReg Smart Thermostat"
+        },
+        "unique_id": "id_${deviceSN}_sys_info_sensor_type",
+        "default_entity_id": "devireg_${deviceSN}_sys_info_sensor_type",
+        "name": "Sys info sensor type"
+    }
+}

@@ -1,0 +1,19 @@
+{
+  "userName": "ci-test",
+  "privateKey": "02E7695D8AA7B6C2241342C0B1D587FACC101C6F2E8F34F86669ED437C55689A",
+  "peerId": "7ec1fb45ba6ef1d242a0806a010b49ca83ee31e5ea3e2f2d059593f14e4c131b",
+  "homePeerId": "45d59e3aa06cc494eadc0891ff4af6514722aaf9e92c23f8b347686878840a69",
+  "houseName": "CI",
+  "rooms": [
+    {
+      "name": "Test room",
+      "devicePeerID": "79cb20e50fe8582cc3f4f78f40e253b4fc509a0e26906c5e0a57cfbb53c7b31e",
+      "serialNumber": "12345678"
+    },
+    {
+      "name": "No serial",
+      "devicePeerID": "87d9a2835e626502c967009e9f1c827149407cc63fd6c115f40e4411e8bcb648",
+      "serialNumber": null
+    }
+  ]
+}

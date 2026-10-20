@@ -1,0 +1,99 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Build and test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: devismart-mqtt
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Unit tests and package
+        run: mvn -B verify
+
+      - name: Start Mosquitto
+        run: docker run -d --name mosq -p 1883:1883 eclipse-mosquitto:2 mosquitto -c /mosquitto-no-auth.conf
+
+      - name: MQTT reliability test (broker restart, malformed messages, crash)
+        env:
+          MQTT_TEST_HOST: localhost
+          MQTT_TEST_PORT: "1883"
+          MQTT_TEST_CONTAINER: mosq
+        run: mvn -B -Dtest=MqttBrokerIT -Dsurefire.failIfNoSpecifiedTests=false test
+
+  app-image:
+    name: App image (${{ matrix.platform }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the app image like the Supervisor does
+        run: docker build --platform ${{ matrix.platform }} -t devismart-test devismart-mqtt
+
+      - name: Base image digests (for pinning)
+        run: |
+          docker image inspect maven:3.9-eclipse-temurin-21 --format '{{index .RepoDigests 0}}' || true
+          docker image inspect eclipse-temurin:21-jre-noble --format '{{index .RepoDigests 0}}' || true
+
+      - name: Smoke test
+        run: |
+          set -u
+          docker network create t
+          docker run -d --name mosq --network t eclipse-mosquitto:2 mosquitto -c /mosquitto-no-auth.conf
+          mkdir -p data cfg1 cfg2
+          echo '{"host":"mosq","port":1883,"user":"","password":"","pairing_code":"","pairing_name":"HA","log_level":"info"}' > data/options.json
+          sub() { docker run --rm --network t eclipse-mosquitto:2 mosquitto_sub -h mosq "$@"; }
+
+          echo "== 1. Not paired: waits quietly instead of crashing or looping"
+          docker run -d --name unpaired --network t -v "$PWD/data:/data:ro" -v "$PWD/cfg1:/config" devismart-test
+          sleep 20
+          docker logs unpaired
+          docker logs unpaired 2>&1 | grep -q "Not paired yet"
+          test "$(docker inspect -f '{{.State.Running}}' unpaired)" = "true"
+          test "$(docker inspect -f '{{.RestartCount}}' unpaired)" = "0"
+          docker stop -t 15 unpaired
+
+          echo "== 2. Paired (fake thermostats): bridge online, discovery published, availability set"
+          cp .github/ci/fake_devi_config.json cfg2/devi_config.json
+          docker run -d --name paired --network t -v "$PWD/data:/data:ro" -v "$PWD/cfg2:/config" devismart-test
+          sleep 30
+          docker logs paired
+          test "$(sub -t devi/bridge/status -C 1 -W 15)" = "online"
+          sub -t 'homeassistant/climate/12345678_devi_thermostat/config' -C 1 -W 15 > climate.json
+          grep -q '"availability_mode": "all"' climate.json
+          grep -q 'devi/bridge/status' climate.json
+          grep -q 'RESUME' climate.json
+          # thermostat without serial number gets a fallback ID
+          sub -t 'homeassistant/climate/+/config' -C 2 -W 15 -v | grep -q 'homeassistant/climate/p'
+          # private key never in the log
+          KEY=$(python3 -c "import json;print(json.load(open('cfg2/devi_config.json'))['privateKey'])")
+          ! docker logs paired 2>&1 | grep -qi "$KEY"
+
+          echo "== 3. Clean stop publishes offline"
+          docker stop -t 15 paired
+          test "$(sub -t devi/bridge/status -C 1 -W 15)" = "offline"
+          echo "All smoke tests passed"

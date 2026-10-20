@@ -1,0 +1,46 @@
+{
+  "topic": "homeassistant/climate/${deviceSN}_devi_thermostat/config",
+  "template": {
+    "name": "Thermostat",
+    "unique_id": "id_${deviceSN}_devi_thermostat",
+    "default_entity_id": "devireg_${deviceSN}_thermostat",
+
+    "availability_topic": "devi/state/${deviceSN}/binary_sensor_device_connected",
+    "payload_available": "ON",
+    "payload_not_available": "OFF",
+
+    "current_temperature_topic": "devi/state/${deviceSN}/temperature_current",
+
+    "temperature_state_topic": "devi/state/${deviceSN}/temperature_target",
+    "temperature_command_topic": "devi/command/${deviceSN}/set_temperature_target",
+
+    "preset_mode_state_topic": "devi/state/${deviceSN}/select_control_mode",
+    "preset_mode_value_template": "{{ 'none' if value in ['OFF', ''] else value }}",
+    "preset_mode_command_topic": "devi/command/${deviceSN}/thermostat_preset",
+    "preset_modes": ["SCHEDULE", "MANUAL", "OVERRIDE", "VACATION", "PAUSE"],
+
+    "mode_state_topic": "devi/state/${deviceSN}/select_control_mode",
+    "mode_state_template": "{{ 'off' if value == 'OFF' else 'heat' }}",
+    "mode_command_topic": "devi/command/${deviceSN}/thermostat_preset",
+    "mode_command_template": "{{ 'OFF' if value == 'off' else 'RESUME' }}",
+    "modes": ["heat", "off"],
+
+    "action_topic": "devi/state/${deviceSN}/hvac_action",
+
+    "min_temp": 5,
+    "max_temp": 40,
+    "temp_step": 0.5,
+    "precision": 0.1,
+    "temperature_unit": "C",
+
+    "icon": "mdi:heating-coil",
+    "device": {
+      "identifiers": [
+        "${deviceSN}"
+      ],
+      "manufacturer": "Danfoss",
+      "name": "DeviReg ${deviceSN}",
+      "model": "DeviReg Smart Thermostat"
+    }
+  }
+}
