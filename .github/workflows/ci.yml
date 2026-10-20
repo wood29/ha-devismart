@@ -35,7 +35,16 @@ jobs:
           MQTT_TEST_HOST: localhost
           MQTT_TEST_PORT: "1883"
           MQTT_TEST_CONTAINER: mosq
-        run: mvn -B -Dtest=MqttBrokerIT -Dsurefire.failIfNoSpecifiedTests=false test
+        run: |
+          mvn -B -Dtest=MqttBrokerIT -Dsurefire.failIfNoSpecifiedTests=false test | tee it.log
+
+      - name: Report results as annotations
+        if: always()
+        run: |
+          for f in target/surefire-reports/*.txt; do
+            [ -f "$f" ] && echo "::notice title=$(basename "$f" .txt)::$(grep -h 'Tests run' "$f" | head -1)"
+          done
+          echo "::notice title=Broker restart::$(grep -c 'reconnected' it.log 2>/dev/null || echo 0) reconnect log lines"
 
   app-image:
     name: App image (${{ matrix.platform }})
@@ -56,8 +65,9 @@ jobs:
 
       - name: Base image digests (for pinning)
         run: |
-          docker image inspect maven:3.9-eclipse-temurin-21 --format '{{index .RepoDigests 0}}' || true
-          docker image inspect eclipse-temurin:21-jre-noble --format '{{index .RepoDigests 0}}' || true
+          for i in maven:3.9-eclipse-temurin-21 eclipse-temurin:21-jre-noble; do
+            echo "::notice title=Digest ${{ matrix.platform }}::$i $(docker buildx imagetools inspect "$i" --format '{{json .Manifest.Digest}}' 2>/dev/null)"
+          done
 
       - name: Smoke test
         run: |
@@ -96,4 +106,4 @@ jobs:
           echo "== 3. Clean stop publishes offline"
           docker stop -t 15 paired
           test "$(sub -t devi/bridge/status -C 1 -W 15)" = "offline"
-          echo "All smoke tests passed"
+          echo "::notice title=Smoke test ${{ matrix.platform }}::unpaired wait, discovery+availability, fallback ID, key not logged, offline on stop: all passed"
