@@ -122,6 +122,8 @@ public class MQTTService {
         options.setWill(BRIDGE_STATUS_TOPIC, BRIDGE_OFFLINE.getBytes(StandardCharsets.UTF_8), 1, true);
 
         c.setCallback(new Callback());
+        // Never block forever on a half-open connection (publishes come from thermostat threads)
+        c.setTimeToWait(10_000);
         client = c;
 
         long started = System.currentTimeMillis();
@@ -224,7 +226,7 @@ public class MQTTService {
         subscribed = false;
         while (c.isConnected()) {
             try {
-                c.subscribe(new String[] { COMMANDS_TOPIC, HA_STATUS_TOPIC }, new int[] { 1, 1 });
+                c.subscribe(COMMANDS_TOPIC, 1);
                 subscribed = true;
                 break;
             } catch (MqttException e) {
@@ -234,6 +236,13 @@ public class MQTTService {
         }
         if (!subscribed) {
             return; // connection dropped again; connectComplete() will run once more
+        }
+        try {
+            // Optional: lets us re-publish discovery when Home Assistant restarts
+            c.subscribe(HA_STATUS_TOPIC, 1);
+        } catch (MqttException e) {
+            logger.warn("Could not subscribe to {} ({}); discovery is still re-sent on every reconnect",
+                    HA_STATUS_TOPIC, e.toString());
         }
 
         publish(BRIDGE_STATUS_TOPIC, BRIDGE_ONLINE, true);

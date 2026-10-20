@@ -43,6 +43,8 @@ public class SDGPeerConnector {
     private @Nullable Future<?> watchdog;
     private volatile long lastPacket = 0;
     private volatile long reconnectDelaySec = 10;
+    private volatile boolean connecting = false;
+    private volatile long lastConnectAttempt = System.currentTimeMillis();
     private static final long MAX_RECONNECT_DELAY_SEC = 300;
 
     /** Last time any thermostat sent anything. Used by the app's liveness monitor. */
@@ -80,7 +82,19 @@ public class SDGPeerConnector {
           // An exception escaping a scheduled task cancels all future runs silently, so catch everything.
           try {
             DeviSmartConnection conn = connection;
-            if (conn == null || conn.getState() != Connection.State.CONNECTED) {
+            if (conn == null) {
+                return; // being disposed
+            }
+            if (conn.getState() != Connection.State.CONNECTED) {
+                // The connection can close without an error callback. Make sure a reconnect is always on its
+                // way, so this thermostat can never stay offline for good while others keep working.
+                ScheduledFuture<?> pending = reconnectReq;
+                boolean waiting = pending != null && !pending.isDone();
+                if (!waiting && !connecting
+                        && System.currentTimeMillis() - lastConnectAttempt > 2 * MAX_RECONNECT_DELAY_SEC * 1000) {
+                    logger.warn("Thermostat connection is down with no reconnect pending, reconnecting");
+                    scheduleReconnect();
+                }
                 return;
             }
             if (System.currentTimeMillis() - lastPacket > 30000) {
@@ -141,6 +155,12 @@ public class SDGPeerConnector {
             if (connection == null) {
                 return; // Stale Reconnect request from deleted/disabled Thing
             }
+            if (connection.getState() == Connection.State.CONNECTED) {
+                return; // a duplicate request; already connected
+            }
+            connecting = true;
+            lastConnectAttempt = System.currentTimeMillis();
+          try {
 
             try {
                 GridConnection grid = GridConnectionKeeper.getConnection();
@@ -156,6 +176,9 @@ public class SDGPeerConnector {
             }
 
             setOnlineStatus();
+          } finally {
+            connecting = false;
+          }
         });
     }
 
@@ -193,7 +216,7 @@ public class SDGPeerConnector {
         }
     }
 
-    private void scheduleReconnect() {
+    private synchronized void scheduleReconnect() {
         ScheduledFuture<?> previous = reconnectReq;
         if (previous != null && !previous.isDone() && previous.getDelay(TimeUnit.MILLISECONDS) > 0) {
             return; // a reconnect is already waiting to run

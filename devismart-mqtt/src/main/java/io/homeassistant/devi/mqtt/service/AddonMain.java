@@ -31,8 +31,7 @@ public class AddonMain {
         try {
             opts = AddonOptions.load(optionsFile);
         } catch (Exception e) {
-            logger.error("Cannot read the app configuration {}: {}", optionsFile, e.toString());
-            System.exit(ConsoleRunner.EXIT_CONFIG);
+            ConsoleRunner.parkForever("Cannot read the app configuration " + optionsFile + ": " + e);
             return;
         }
         applyLogLevel(opts.logLevel);
@@ -41,7 +40,12 @@ public class AddonMain {
         AddonOptions mqtt = opts;
         if (Files.exists(legacyMqtt)) {
             logger.info("Using MQTT settings from {} (the app configuration's MQTT fields are ignored)", legacyMqtt);
-            mqtt = AddonOptions.load(legacyMqtt);
+            try {
+                mqtt = AddonOptions.load(legacyMqtt);
+            } catch (Exception e) {
+                ConsoleRunner.parkForever(legacyMqtt + " is damaged (" + e + "). Fix or delete it.");
+                return;
+            }
         }
 
         Path customTemplates = Paths.get("/config/auto-discovery-templates");
@@ -50,6 +54,7 @@ public class AddonMain {
             templates = customTemplates;
         }
 
+        logger.info("Self-healing restarts need 'Watchdog' switched on in the app's Info tab.");
         ConsoleRunner.run(mqtt, deviConfig, templates);
     }
 

@@ -57,6 +57,22 @@ public class ConsoleRunner {
 
     /** Exit codes. Any non-zero exit makes the Supervisor watchdog restart the app. */
     static final int EXIT_CONFIG = 2;
+
+    /**
+     * For problems a restart cannot fix (damaged configuration): log once and wait, instead of exiting into a
+     * Supervisor restart loop. The user fixes the configuration and restarts the app.
+     */
+    static void parkForever(String reason) {
+        logger.error(reason);
+        logger.error("Waiting. Fix the problem above, then restart the app.");
+        while (true) {
+            try {
+                Thread.sleep(Long.MAX_VALUE);
+            } catch (InterruptedException e) {
+                return;
+            }
+        }
+    }
     static final int EXIT_MQTT_DOWN = 3;
     static final int EXIT_THERMOSTATS_SILENT = 4;
 
@@ -132,20 +148,17 @@ public class ConsoleRunner {
             privateKey = deviConfig.get("privateKey").getAsString();
             rooms = readRooms(deviConfig);
         } catch (Exception e) {
-            logger.error("{} is missing or damaged ({}). Delete it and pair again.", deviConfigPath, e.toString());
-            System.exit(EXIT_CONFIG);
+            parkForever(deviConfigPath + " is missing or damaged (" + e + "). Delete it and pair again.");
             return;
         }
         if (rooms.isEmpty()) {
-            logger.error("{} contains no thermostats. Delete it and pair again.", deviConfigPath);
-            System.exit(EXIT_CONFIG);
+            parkForever(deviConfigPath + " contains no thermostats. Delete it and pair again.");
             return;
         }
 
         List<Template> templates = loadTemplates(templatesPath);
         if (templates.isEmpty()) {
-            logger.error("No discovery templates found in {}", templatesPath);
-            System.exit(EXIT_CONFIG);
+            parkForever("No valid discovery templates found in " + templatesPath);
             return;
         }
 

@@ -106,7 +106,7 @@ public final class Pairing {
             return Result.BAD_CODE;
         } catch (Exception e) {
             logger.error("Pairing failed: {}", e.toString());
-            return Result.BAD_CODE;
+            return Result.FAILED;
         } finally {
             try {
                 pairing.close();
@@ -181,7 +181,7 @@ public final class Pairing {
             DataInputStream chunk = new DataInputStream(cfg.receiveData());
             int chunkSize = chunk.available();
 
-            if (chunkSize > 8 && data == null) {
+            if (chunkSize >= 8 && data == null) {
                 chunk.mark(8);
                 if (chunk.readInt() == 0) {
                     dataSize = Integer.reverseBytes(chunk.readInt());

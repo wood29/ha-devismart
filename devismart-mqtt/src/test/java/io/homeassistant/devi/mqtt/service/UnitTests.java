@@ -73,6 +73,7 @@ class UnitTests {
         assertEquals("OVERRIDE", CommandValidator.mode("SET OVERRIDE"));
         assertEquals("SCHEDULE", CommandValidator.mode("schedule"));
         assertEquals("RESUME", CommandValidator.mode("RESUME"));
+        assertEquals(CommandValidator.MODE_NONE, CommandValidator.mode("none"));
         assertNull(CommandValidator.mode("TURBO"));
         assertNull(CommandValidator.mode(""));
     }

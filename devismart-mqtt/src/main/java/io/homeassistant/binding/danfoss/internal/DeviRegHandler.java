@@ -87,6 +87,9 @@ public class DeviRegHandler extends BaseThingHandler implements ISDGPeerHandler 
                     logger.warn("Ignoring unknown mode '{}'", payload);
                     break;
                 }
+                if (mode.equals(CommandValidator.MODE_NONE)) {
+                    break; // the climate card's built-in "none" preset
+                }
                 ChannelUID selectChannelUID = new ChannelUID(new ThingUID("cmd", "danfoss", "devismart"),
                         CHANNEL_CONTROL_MODE);
                 handleCommand(selectChannelUID, new StringType(mode));

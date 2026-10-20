@@ -31,6 +31,8 @@ public final class CommandValidator {
 
     /** Modes accepted on the control-mode select and the climate preset/mode topics. */
     public static final String MODE_RESUME = "RESUME";
+    /** Home Assistant's built-in "none" preset. Accepted and ignored. */
+    public static final String MODE_NONE = "NONE";
     private static final Set<String> MODES = Set.of(CONTROL_MODE_MANUAL, CONTROL_MODE_OVERRIDE,
             CONTROL_MODE_SCHEDULE, CONTROL_MODE_VACATION, CONTROL_MODE_PAUSE, CONTROL_MODE_OFF, MODE_RESUME);
 
@@ -99,6 +101,9 @@ public final class CommandValidator {
             return null;
         }
         String p = payload.trim().toUpperCase();
+        if (p.equals("NONE")) {
+            return MODE_NONE; // Home Assistant's own "no preset" entry: nothing to do
+        }
         if (p.equals("SET OVERRIDE")) {
             p = CONTROL_MODE_OVERRIDE;
         }

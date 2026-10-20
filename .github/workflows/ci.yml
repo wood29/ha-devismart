@@ -8,12 +8,18 @@ on:
 permissions:
   contents: read
 
+# "shell: bash" runs with -eo pipefail, so a failing command in a pipe fails the step
+defaults:
+  run:
+    shell: bash
+
 jobs:
   test:
     name: Build and test
     runs-on: ubuntu-latest
     defaults:
       run:
+        shell: bash
         working-directory: devismart-mqtt
     steps:
       - uses: actions/checkout@v4
@@ -44,7 +50,7 @@ jobs:
           for f in target/surefire-reports/*.txt; do
             [ -f "$f" ] && echo "::notice title=$(basename "$f" .txt)::$(grep -h 'Tests run' "$f" | head -1)"
           done
-          echo "::notice title=Broker restart::$(grep -c 'reconnected' it.log 2>/dev/null || echo 0) reconnect log lines"
+          echo "::notice title=Broker restart::$(grep -c 'reconnected' it.log 2>/dev/null || true) reconnect log lines"
 
   app-image:
     name: App image (${{ matrix.platform }})
@@ -84,7 +90,8 @@ jobs:
           docker logs unpaired
           docker logs unpaired 2>&1 | grep -q "Not paired yet"
           test "$(docker inspect -f '{{.State.Running}}' unpaired)" = "true"
-          test "$(docker inspect -f '{{.RestartCount}}' unpaired)" = "0"
+          sleep 10
+          test "$(docker inspect -f '{{.State.Running}}' unpaired)" = "true"
           docker stop -t 15 unpaired
 
           echo "== 2. Paired (fake thermostats): bridge online, discovery published, availability set"
@@ -101,9 +108,18 @@ jobs:
           sub -t 'homeassistant/climate/+/config' -C 2 -W 15 -v | grep -q 'homeassistant/climate/p'
           # private key never in the log
           KEY=$(python3 -c "import json;print(json.load(open('cfg2/devi_config.json'))['privateKey'])")
-          ! docker logs paired 2>&1 | grep -qi "$KEY"
+          if docker logs paired 2>&1 | grep -qi "$KEY"; then echo "Private key found in the log"; exit 1; fi
 
           echo "== 3. Clean stop publishes offline"
           docker stop -t 15 paired
           test "$(sub -t devi/bridge/status -C 1 -W 15)" = "offline"
-          echo "::notice title=Smoke test ${{ matrix.platform }}::unpaired wait, discovery+availability, fallback ID, key not logged, offline on stop: all passed"
+          echo "== 4. Damaged config: waits with a clear message instead of a restart loop"
+          mkdir -p cfg3 && echo "garbage" > cfg3/devi_config.json
+          docker run -d --name damaged --network t -v "$PWD/data:/data:ro" -v "$PWD/cfg3:/config" devismart-test
+          sleep 20
+          docker logs damaged
+          docker logs damaged 2>&1 | grep -q "Fix the problem above"
+          test "$(docker inspect -f '{{.State.Running}}' damaged)" = "true"
+          docker stop -t 15 damaged
+
+          echo "::notice title=Smoke test ${{ matrix.platform }}::unpaired wait, discovery+availability, fallback ID, key not logged, offline on stop, damaged config waits: all passed"
