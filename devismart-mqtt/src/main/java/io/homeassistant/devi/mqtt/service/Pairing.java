@@ -46,6 +46,9 @@ public final class Pairing {
 
     private static final Logger logger = LoggerFactory.getLogger(Pairing.class);
 
+    /** How long the user has to confirm the share in the DEVIsmart app. */
+    private static final int CONFIRM_TIMEOUT_SEC = 180;
+
     /** How long to wait for the thermostats to report their serial numbers. */
     private static final long SERIAL_NUMBER_TIMEOUT_SEC = 120;
 
@@ -118,14 +121,23 @@ public final class Pairing {
         // Step 2: ask the phone for the house configuration (list of thermostats)
         DominionConfiguration.Response house;
         PeerConnection cfg = new PeerConnection();
+        // The phone only sends the house configuration after the user has confirmed the share in the DEVIsmart
+        // app, which takes longer than the library's default 10 s. With 10 s the phone reports "couldn't send
+        // configuration" because we have already stopped listening.
+        cfg.setTimeout(CONFIRM_TIMEOUT_SEC);
         try {
-            logger.info("Paired. Receiving the house configuration from the DEVIsmart app...");
+            logger.info("Code accepted. Now CONFIRM the share in the DEVIsmart app on your phone "
+                    + "(waiting up to {} minutes)...", CONFIRM_TIMEOUT_SEC / 60);
             cfg.connectToRemote(grid, phoneId, "dominion-configuration-1.0");
             DominionConfiguration.Request request = new DominionConfiguration.Request(userName, myPeerIdHex);
             cfg.sendData(new Gson().toJson(request).getBytes(StandardCharsets.UTF_8));
             byte[] data = receiveAll(cfg);
             house = new Gson().fromJson(new JsonReader(new StringReader(new String(data, StandardCharsets.UTF_8))),
                     DominionConfiguration.Response.class);
+        } catch (java.util.concurrent.TimeoutException e) {
+            logger.error("The DEVIsmart app did not send the thermostat list within {} minutes "
+                    + "(was the share confirmed on the phone?)", CONFIRM_TIMEOUT_SEC / 60);
+            return Result.FAILED;
         } catch (Exception e) {
             logger.error("Could not receive the house configuration: {}", e.toString());
             return Result.FAILED;

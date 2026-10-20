@@ -13,7 +13,8 @@ It talks to the thermostats through the same Danfoss cloud the DEVIsmart app use
 
 1. In the **DEVIsmart** app open **Settings → Share house** and generate a code.
 2. Paste the code into **Pairing code** in this app's configuration and save.
-3. Start (or restart) the app and watch the **Log** tab. If the DEVIsmart app asks you to approve, approve it.
+3. Start (or restart) the app and watch the **Log** tab. When it says *Code accepted*, confirm the share in the
+   DEVIsmart app on your phone within 3 minutes.
 4. When the log says *Pairing complete*, the thermostats appear under **Settings → Devices & services → MQTT**.
 
 The pairing result is stored in `devi_config.json` in this app's config folder (`/addon_configs/<id>_devismart-mqtt/`).

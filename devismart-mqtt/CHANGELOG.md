@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.1
+- Pairing: wait up to 3 minutes for the share to be confirmed in the DEVIsmart app. The library default of
+  10 seconds was too short, so the phone reported "couldn't send configuration".
+- Clearer pairing messages in the log.
+
 ## 1.0.0
 
 Stabilized fork of bob-tm's Devismart MQTT 0.5 (ha-devi-mqtt dc38368, ha-apps bf168d5).

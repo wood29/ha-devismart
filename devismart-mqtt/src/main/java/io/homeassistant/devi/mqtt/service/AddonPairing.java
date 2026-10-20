@@ -36,7 +36,7 @@ public class AddonPairing {
             logger.info(" 1. In the DEVIsmart app open Settings -> Share house and generate a code.");
             logger.info(" 2. In Home Assistant open this app's Configuration tab, paste the code into");
             logger.info("    'pairing_code' and save.");
-            logger.info(" 3. Restart the app. Approve the request in the DEVIsmart app if it asks.");
+            logger.info(" 3. Restart the app, then confirm the share in the DEVIsmart app when it asks.");
             logger.info("------------------------------------------------------------------");
             System.exit(3);
             return;
@@ -53,8 +53,8 @@ public class AddonPairing {
                 System.exit(4);
                 break;
             default:
-                logger.error("Pairing failed. Check the internet connection, then restart the app to try again "
-                        + "(you may need a new code).");
+                logger.error("Pairing failed. Generate a NEW code, enter it, restart the app and confirm the "
+                        + "share in the DEVIsmart app within 3 minutes.");
                 System.exit(5);
         }
     }
