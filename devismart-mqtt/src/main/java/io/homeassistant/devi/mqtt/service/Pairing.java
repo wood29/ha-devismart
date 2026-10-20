@@ -76,10 +76,33 @@ public final class Pairing {
             return Result.BAD_CODE;
         }
 
+        // Reuse the same identity for every attempt. With a new key per attempt, each failed attempt can leave
+        // another user entry behind on the thermostats, which allow only 10 users.
+        Path keyFile = out.toAbsolutePath().getParent().resolve(".devi_pairing_key");
+        String existingKey = null;
+        try {
+            if (Files.exists(keyFile)) {
+                existingKey = Files.readString(keyFile, StandardCharsets.UTF_8).trim();
+            }
+        } catch (IOException e) {
+            logger.warn("Could not read the saved pairing identity, creating a new one: {}", e.toString());
+        }
+
         Map<String, Object> configMap = new HashMap<>();
         configMap.put("userName", userName);
+        if (existingKey != null && !existingKey.isEmpty()) {
+            configMap.put("privateKey", existingKey);
+            logger.info("Reusing the identity from the previous pairing attempt");
+        }
         ConfigurationAdmin configAdmin = new MockConfigurationAdmin();
-        DanfossBindingConfig.update(configMap, configAdmin); // creates a new private key
+        DanfossBindingConfig.update(configMap, configAdmin); // creates a new private key if none was given
+        if (existingKey == null || !existingKey.equals(DanfossBindingConfig.get().privateKey)) {
+            try {
+                writePrivate(keyFile, DanfossBindingConfig.get().privateKey);
+            } catch (IOException e) {
+                logger.warn("Could not save the pairing identity: {}", e.toString());
+            }
+        }
 
         GridConnectionKeeper.AddUser();
         GridConnection grid;

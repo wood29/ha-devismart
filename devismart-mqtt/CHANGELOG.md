@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2
+- Pairing reuses the same identity on every attempt, so failed attempts no longer add extra users to the
+  thermostats (each thermostat allows at most 10 users).
+
 ## 1.0.1
 - Pairing: wait up to 3 minutes for the share to be confirmed in the DEVIsmart app. The library default of
   10 seconds was too short, so the phone reported "couldn't send configuration".

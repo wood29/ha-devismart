@@ -23,6 +23,9 @@ Home Assistant backups. To pair again, delete that file and repeat the steps abo
 
 Codes work once and expire. If the log says the code was refused, generate a new one.
 
+If the phone says it **couldn't send the configuration**, check in the DEVIsmart app that all thermostats are
+online and that they have fewer than 10 shared users; remove old or duplicate users and try again.
+
 ## What you get per thermostat
 
 - A **climate** entity: current temperature, target temperature, heating on/off and the thermostat's modes as presets
