@@ -143,15 +143,47 @@ public final class Pairing {
 
         // Step 2: ask the phone for the house configuration (list of thermostats)
         DominionConfiguration.Response house;
-        PeerConnection cfg = new PeerConnection();
         // The phone only sends the house configuration after the user has confirmed the share in the DEVIsmart
         // app, which takes longer than the library's default 10 s. With 10 s the phone reports "couldn't send
         // configuration" because we have already stopped listening.
-        cfg.setTimeout(CONFIRM_TIMEOUT_SEC);
+        logger.info("Code accepted. Now CONFIRM the share in the DEVIsmart app on your phone "
+                + "(waiting up to {} minutes)...", CONFIRM_TIMEOUT_SEC / 60);
+        // The Android app only accepts the configuration connection once the share has been confirmed, so a
+        // refusal right after pairing just means "not yet": keep trying until confirmed or timed out.
+        PeerConnection cfg = null;
+        long deadline = System.currentTimeMillis() + CONFIRM_TIMEOUT_SEC * 1000L;
+        int attempts = 0;
+        while (true) {
+            PeerConnection c = new PeerConnection();
+            c.setTimeout(CONFIRM_TIMEOUT_SEC);
+            attempts++;
+            try {
+                c.connectToRemote(grid, phoneId, "dominion-configuration-1.0");
+                cfg = c;
+                logger.info("The DEVIsmart app accepted the connection{}",
+                        attempts > 1 ? " after " + attempts + " tries" : "");
+                break;
+            } catch (RemoteException e) {
+                if (System.currentTimeMillis() > deadline) {
+                    logger.error("The DEVIsmart app never accepted the connection within {} minutes "
+                            + "(was the share confirmed?)", CONFIRM_TIMEOUT_SEC / 60);
+                    return Result.FAILED;
+                }
+                if (attempts == 1 || attempts % 10 == 0) {
+                    logger.info("Waiting for the share to be confirmed in the DEVIsmart app...");
+                }
+                try {
+                    Thread.sleep(2000);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    return Result.FAILED;
+                }
+            } catch (Exception e) {
+                logger.error("Could not connect to the DEVIsmart app: {}", e.toString());
+                return Result.FAILED;
+            }
+        }
         try {
-            logger.info("Code accepted. Now CONFIRM the share in the DEVIsmart app on your phone "
-                    + "(waiting up to {} minutes)...", CONFIRM_TIMEOUT_SEC / 60);
-            cfg.connectToRemote(grid, phoneId, "dominion-configuration-1.0");
             DominionConfiguration.Request request = new DominionConfiguration.Request(userName, myPeerIdHex);
             cfg.sendData(new Gson().toJson(request).getBytes(StandardCharsets.UTF_8));
             byte[] data = receiveAll(cfg);

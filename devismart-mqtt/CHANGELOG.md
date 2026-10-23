@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.3
+- Pairing keeps retrying the connection to the DEVIsmart app until the share is confirmed (up to 3 minutes)
+  instead of giving up at the first refusal.
+- Docs: sharing from the iOS DEVIsmart app fails ("couldn't send configuration"); share from the Android app.
+
 ## 1.0.2
 - Pairing reuses the same identity on every attempt, so failed attempts no longer add extra users to the
   thermostats (each thermostat allows at most 10 users).

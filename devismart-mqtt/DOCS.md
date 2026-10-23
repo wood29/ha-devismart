@@ -11,6 +11,10 @@ It talks to the thermostats through the same Danfoss cloud the DEVIsmart app use
 
 ## Pairing (once)
 
+> **Use the Android DEVIsmart app for this step.** Sharing from the iPhone app fails with "couldn't send
+> configuration" (a known DEVIsmart iOS issue). If you only have iPhones, share the house to the Android app in an
+> emulator such as BlueStacks on a Windows PC first, then share from there.
+
 1. In the **DEVIsmart** app open **Settings → Share house** and generate a code.
 2. Paste the code into **Pairing code** in this app's configuration and save.
 3. Start (or restart) the app and watch the **Log** tab. When it says *Code accepted*, confirm the share in the
